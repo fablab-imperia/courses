@@ -1,7 +1,11 @@
+// Inclusione libreria DHT per lettura sensore temperatura DHT11
+#include "DHT.h"
+
 // Inclusione libreria Wifi
 #include <WiFi.h>
 
 #define LED_PIN 33
+#define DHT_PIN 34
 
 // Credenziali Wifi da utilizzare per il collegamento (access point esterno)
 const char* ssid = "Esp32@Fablab";
@@ -9,6 +13,9 @@ const char* password = "123456";
 
 // Creazione server web su porta 80 (HTTP)
 WiFiServer server(80);
+
+// Creo un sensore di temperatura
+DHT dht(DHT_PIN, DHT11);
 
 // Uso una stringa per salvare i dati ricevuti dal client
 // in modo semplice
@@ -31,6 +38,7 @@ void setup() {
 
   // Preparo linea seriale per serial monitor
   Serial.begin(115200);
+  dht.begin();
 
   // Configuro il pin per il LED come output
   pinMode(LED_PIN, OUTPUT);
@@ -80,7 +88,8 @@ void loop(){
     // Salviamo le singole linee di testo ricevute dal client
     // in questa variabile    
     String currentLine = "";                
-    
+
+
     // Se client ancora connesso e tempo limite non scaduto
     while (client.connected() && currentTime - previousTime <= timeoutTime) { 
       
@@ -105,8 +114,10 @@ void loop(){
           // è vuota allora siamo alla fine della richiesta: occorre mandare una risposta
 
           if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
+
+            float h = dht.readHumidity();
+            // Read temperature as Celsius (the default)
+            float t = dht.readTemperature();
 
             // Le risposte HTTP iniziano con codice HTTP e relativa traduzione (per esempio 200 OK)
             // che vuol dire "tutto bene dal server" o "nessun errore - eccoti la risposta"
@@ -147,6 +158,7 @@ void loop(){
             
             // Descrizione LED
             client.println("<p>LED - State " + ledState + "</p>");
+            
             
             // Mostra il bottone OFF se LED acceso e viceversa     
             if (ledState == "off") {
