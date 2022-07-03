@@ -1,18 +1,18 @@
-// Inclusione libreria DHT per lettura sensore temperatura DHT11
-#include "DHT.h"
+#include <DHT.h>
 
 // Inclusione libreria Wifi
 #include <WiFi.h>
 
 #define LED_PIN 33
-#define DHT_PIN 34
+#define DHT_PIN 32
 
 // Credenziali Wifi da utilizzare per il collegamento (access point esterno)
-const char* ssid = "Esp32@Fablab";
+const char* ssid = "";
 const char* password = "123456";
 
 // Creazione server web su porta 80 (HTTP)
 WiFiServer server(80);
+DHT dht(DHT_PIN,DHT11);
 
 // Creo un sensore di temperatura
 DHT dht(DHT_PIN, DHT11);
@@ -39,7 +39,6 @@ void setup() {
   // Preparo linea seriale per serial monitor
   Serial.begin(115200);
   dht.begin();
-
   // Configuro il pin per il LED come output
   pinMode(LED_PIN, OUTPUT);
 
@@ -88,10 +87,11 @@ void loop(){
     // Salviamo le singole linee di testo ricevute dal client
     // in questa variabile    
     String currentLine = "";                
-
-
+     
     // Se client ancora connesso e tempo limite non scaduto
     while (client.connected() && currentTime - previousTime <= timeoutTime) { 
+
+     float temp = dht.readTemperature();
       
       // Aggiorno tempo trascorso
       currentTime = millis();
@@ -141,6 +141,10 @@ void loop(){
             // Pagina HTML base
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+
+            //Auto -refresh gestito dal browser
+            client.println("<meta http-equiv='refresh' content='1'>");
+            
             
             // CSS 
 
@@ -158,7 +162,16 @@ void loop(){
             
             // Descrizione LED
             client.println("<p>LED - State " + ledState + "</p>");
+
+             // Temperatura
+            client.println("<p>Temperature: " );
+            client.println(t) 
+            client.println("</p>");
             
+            // Umidità
+            client.println("<p>Humidity: ");
+            client.println(h) 
+            client.println("</p>");
             
             // Mostra il bottone OFF se LED acceso e viceversa     
             if (ledState == "off") {
@@ -166,6 +179,11 @@ void loop(){
             } else {
               client.println("<p><a href=\"/off\"><button class=\"button button2\">OFF</button></a></p>");
             } 
+
+            temperatureLine = "<p>TEMPERATURE: ";
+            temperatureLine += temp;
+            temperatureLine += "</p>";
+            client.println(temp);
             
             // Fine pagina HTML
             client.println("</body></html>");
